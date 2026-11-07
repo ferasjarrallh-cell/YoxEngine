@@ -10,33 +10,37 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Install XcodeGen
-      run: brew install xcodegen
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-    - name: Generate Xcode Project
-      run: xcodegen generate
+      - name: Generate Xcode Project
+        run: xcodegen generate
 
-    - name: Build Archive
-      run: |
-        xcodebuild -project YoxEngine.xcodeproj \
-                   -scheme YoxEngine \
-                   -configuration Release \
-                   -sdk iphoneos \
-                   -archivePath build/YoxEngine.xcarchive \
-                   archive \
-                   CODE_SIGNING_ALLOWED=NO
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
 
-    - name: Prepare Unsigned IPA
-      run: |
-        mkdir -p build/Payload
-        cp -r build/YoxEngine.xcarchive/Products/Applications/*.app build/Payload/
-        cd build && zip -r YoxEngine.ipa Payload
+      - name: Build App
+        run: |
+          xcodebuild -project YoxEngine.xcodeproj \
+                     -scheme YoxEngine \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -derivedDataPath build \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGNING_ALLOWED=NO
 
-    - name: Upload IPA Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: YoxEngine-IPA
-        path: build/YoxEngine.ipa
+      - name: Create IPA Structure
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/YoxEngine.app Payload/
+          zip -r YoxEngine.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YoxEngine-IPA
+          path: YoxEngine.ipa
