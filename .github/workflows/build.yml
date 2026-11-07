@@ -13,18 +13,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Xcode
-        run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Create App Bundle
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build App with Xcode
         run: |
-          mkdir -p build/YoxEngine.app
-          cp -r * build/YoxEngine.app/ 2>/dev/null || true
+          xcodebuild build \
+                     -project YoxEngine.xcodeproj \
+                     -scheme YoxEngine \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -derivedDataPath build \
+                     CODE_SIGNING_ALLOWED=NO
 
-      - name: Create IPA Package
+      - name: Create Valid IPA Structure
         run: |
           mkdir -p Payload
-          cp -r build/YoxEngine.app Payload/
+          cp -r build/Build/Products/Release-iphoneos/*.app Payload/
           zip -r YoxEngine.ipa Payload
 
       - name: Upload IPA Artifact
