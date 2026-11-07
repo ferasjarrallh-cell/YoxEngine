@@ -1,0 +1,42 @@
+name: Build YoxEngine IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode Project
+      run: xcodegen generate
+
+    - name: Build Archive
+      run: |
+        xcodebuild -project YoxEngine.xcodeproj \
+                   -scheme YoxEngine \
+                   -configuration Release \
+                   -sdk iphoneos \
+                   -archivePath build/YoxEngine.xcarchive \
+                   archive \
+                   CODE_SIGNING_ALLOWED=NO
+
+    - name: Prepare Unsigned IPA
+      run: |
+        mkdir -p build/Payload
+        cp -r build/YoxEngine.xcarchive/Products/Applications/*.app build/Payload/
+        cd build && zip -r YoxEngine.ipa Payload
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: YoxEngine-IPA
+        path: build/YoxEngine.ipa
